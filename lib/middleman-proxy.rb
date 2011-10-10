@@ -36,21 +36,26 @@ module Middleman
 
         def self.add(path, options={})
           @@proxies ||= {}
-          @@proxies[path] = options[:to]
+          @@proxies[path] = options
         end
       end
 
       module ClassMethods
         # Proxies requests to the path 
         #
-        #     proxy '/twitter', "http://twitter/web/service"
+        #
+        #     require 'middleman-proxy'
+        #     activate :proxy
+        #
+        #     proxy '/an_api_path', :to => "your-api-hostname.com"
+        #     proxy '/ssl_api_path', :to => "your-other-api-hostname.com", :secure => true
         def proxy(path, options={})
           Middleman::Features::Proxy::Collection.add(path, options)
         end
       end
 
       # Rack application proxies requests as needed for the given project.
-      module Rack
+      class Rack
 
         def initialize(app)
           @app = app
@@ -66,7 +71,7 @@ module Middleman
             end
           end
 
-          return [404, {}, "not found"]
+          @app.call(env)
         end
 
         def handle_proxy(proxy, proxy_url, env)
@@ -166,7 +171,7 @@ module Middleman
                 end
               end
 
-              $stderr.puts << "   #{key}: #{value}\n"
+              $stderr << "   #{key}: #{value}\n"
               response_headers[key] = value
             end
 
@@ -194,7 +199,6 @@ module Middleman
           return [status, ::Rack::Utils::HeaderHash.new(response_headers), [response_body]]
         end
       end
-      
     end
   end
 end
